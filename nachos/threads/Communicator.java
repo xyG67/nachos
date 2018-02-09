@@ -76,4 +76,10 @@ public class Communicator {
 		Machine.interrupt().restore(intStatus);
 		return speakerQueue.poll();
 	}
+	
+	//self test
+	public static void selfTest() {
+		
+	}
+		
 }

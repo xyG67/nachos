@@ -189,6 +189,9 @@ public class PriorityScheduler extends Scheduler {
 			Lib.assertTrue(Machine.interrupt().disabled());
 			// implement me (if you want)
 		}
+		
+		
+
 
 		/**
 		 * <tt>true</tt> if this queue should transfer priority from waiting
@@ -305,7 +308,8 @@ public class PriorityScheduler extends Scheduler {
 			waitQueue.lockHolder.effectivePriority = expiredEffectivePriority;
 			waitQueue.lockHolder.waiters = waitQueue;
 		}
-		//
+		//self test
+	
 		
 		
 		/**

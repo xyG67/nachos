@@ -107,6 +107,13 @@ public class Alarm {
 		}
 	}
 	
+	//self test
+	static void selfTest() {
+		
+	}
+	
+	
+	
 	private LinkedList<waiter> waitlist;
 	private static final char dbgInt = 'i';
 	private TreeSet<waiter> waiting;

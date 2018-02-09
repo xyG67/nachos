@@ -2,11 +2,12 @@
 
 package nachos.machine;
 
-import nachos.security.*;
-import nachos.threads.KThread;
-import nachos.ag.*;
-
 import java.io.File;
+
+import nachos.ag.AutoGrader;
+import nachos.security.NachosSecurityManager;
+import nachos.security.Privilege;
+import nachos.threads.KThread;
 
 /**
  * The master class of the simulated machine. Processes command line arguments,
@@ -61,8 +62,11 @@ public final class Machine {
 		new TCB().start(new Runnable() {
 			public void run() {
 				autoGrader.start(privilege);
+				
+				
 			}
 		});
+		
 	}
 
 	/**
