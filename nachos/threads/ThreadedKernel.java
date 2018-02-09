@@ -50,7 +50,7 @@ public class ThreadedKernel extends Kernel {
 		Semaphore.selfTest();
 		SynchList.selfTest();
 		//-----------------	    
-	     KThread.selfTest2();
+	     KThread.selfTest();
 	    // Communicator.selfTest();
 	    // Condition2.selfTest();
 	    // Alarm.selfTest();
