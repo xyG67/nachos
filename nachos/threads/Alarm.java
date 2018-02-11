@@ -74,7 +74,7 @@ public class Alarm {
 		long wakeTime = Machine.timer().getTime() + x;
 		
 		waiter waitThread = new waiter(wakeTime, KThread.currentThread());
-		waitlist.add(waitThread);
+		waiting.add(waitThread);
 		
 		
 		System.out.println(KThread.currentThread().getName() + "sleep at "+ Machine.timer().getTime() + " should wake at "+wakeTime);
@@ -82,8 +82,8 @@ public class Alarm {
 		
 		KThread.sleep();
 		Machine.interrupt().restore(intStatus);
-		//while (wakeTime > Machine.timer().getTime())
-			//KThread.yield();
+		while (wakeTime > Machine.timer().getTime())
+			KThread.yield();
 		
 		
 	}
@@ -110,11 +110,36 @@ public class Alarm {
 	//self test
 	static void selfTest() {
 		
+		class alarmTest implements Runnable{
+			String label;
+			Alarm a=new Alarm();
+			long time;
+			alarmTest(String s,long time){
+				label=s;
+				this.time=time;
+			}
+			@Override
+			public void run() {
+				System.out.println(label);
+				a.waitUntil(time);
+				System.out.println(time+" ms passed");
+			}
+			
+		}
+
+		KThread Athread = new KThread(new alarmTest("A",3000)).setName("A");
+		KThread Bthread = new KThread(new alarmTest("B",1000)).setName("B");
+		
+		System.out.println("beginning: Alarm Test");
+		Athread.fork();
+		Bthread.fork();
+		Athread.join();
+		Bthread.join();
 	}
 	
 	
-	
-	private LinkedList<waiter> waitlist;
+//	private ThreadQueue waitlist  = ThreadedKernel.scheduler.newThreadQueue(true); 
+//	private LinkedList<waiter> waitlist= new LinkedList<>();
 	private static final char dbgInt = 'i';
 	private TreeSet<waiter> waiting;
 }
