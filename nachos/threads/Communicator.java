@@ -256,9 +256,10 @@ public class Communicator {
 			new KThread(new speakerThread(c10, 10 * 10 + i)).setName("s10-" + i).fork();
 		}
 		a1.waitUntil(5000);
-
+		
 		// VAR11: Test for more speakers, more listeners, speakers and listeners
 		// have the same number but created with random order.
+		System.out.println("\n Test11");
 		Communicator c11=new Communicator();
 		int N=100;
 		boolean[] flip=new boolean[N];
