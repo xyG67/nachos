@@ -124,6 +124,16 @@ public class Communicator {
 		KThread s2=new KThread(new speakerThread(c2,2)).setName("s2");
 		s2.fork();
 		s2.join();
+//		VAR3: Test for one speaker, more listeners, listener waits for speaker
+//		VAR4: Test for one speaker, more listeners, speaker waits for listener
+//		VAR5: Test for one speaker, more listeners, listeners waits for speaker, and then create more listeners
+//		VAR6: Test for more speakers, one listener, listener waits for speaker
+//		VAR7: Test for more speakers, one listener, speaker waits for listener
+//		VAR8: Test for one listener, more speakers, speakers wait for listener, and then create more speakers
+//		VAR9: Test for more speakers, more listeners, listeners waits for speaker
+//		VAR10: Test for more speakers, more listeners, listeners waits for speaker
+//		VAR11: Test for more speakers, more listeners, speakers and listeners have the same number but created with random order.
+//		VAR12: Run above test cases in batch for more than two hours, make sure no exception occurs.
 	}
 		
 }
