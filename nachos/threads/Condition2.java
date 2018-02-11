@@ -56,8 +56,8 @@ public class Condition2 {
 		Lib.assertTrue(conditionLock.isHeldByCurrentThread());
 		//Project 1.2
 		boolean intStatus = Machine.interrupt().disable();//disable the interrupt
-		
-		waitQueue.removeFirst().ready();
+		if (!waitQueue.isEmpty())
+			waitQueue.removeFirst().ready();
 		
 		Machine.interrupt().restore(intStatus);//enable the interrupt
 	}
@@ -95,10 +95,7 @@ public class Condition2 {
 
 		    private Lock lock; 
 		    private Condition2 condition; 
-		    }
-	
-	
-	
+	}
     /**
      * Test if this module is working.
      */
@@ -110,7 +107,7 @@ public class Condition2 {
     Condition2 condition = new Condition2(lock); 
 
     KThread t[] = new KThread[10];
-	for (int i=0; i<10; i++) {
+	for (int i=0; i<t.length; i++) {
          t[i] = new KThread(new Condition2Test(lock, condition));
          t[i].setName("Thread" + i).fork();
 	}

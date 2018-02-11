@@ -190,9 +190,6 @@ public class PriorityScheduler extends Scheduler {
 			// implement me (if you want)
 		}
 		
-		
-
-
 		/**
 		 * <tt>true</tt> if this queue should transfer priority from waiting
 		 * threads to the owning thread.
@@ -241,19 +238,17 @@ public class PriorityScheduler extends Scheduler {
 			//project 1.5
 			if (effectivePriority != expiredEffectivePriority)
 				return effectivePriority;
-				effectivePriority = priority;
-				if (waiters == null)
+			effectivePriority = priority;
+			if (waiters == null)
 				return effectivePriority;
-				for (Iterator i = waiters.waitQueue.iterator(); i.hasNext(); )
-				{
+			for (Iterator i = waiters.waitQueue.iterator(); i.hasNext();){
 				ThreadState ts = getThreadState((KThread)i.next());
-				if (ts.priority > effectivePriority)
-				{
-				effectivePriority = ts.priority;
+				if (ts.priority > effectivePriority){
+					effectivePriority = ts.priority;
 				}
-				}
+			}
 			return effectivePriority;
-				//return priority;
+			//return priority;
 		}
 
 		/**
@@ -287,7 +282,7 @@ public class PriorityScheduler extends Scheduler {
 			//project 1.5
 			waitQueue.waitQueue.add(this.thread); //将线程加入到等待队列上
 			if (!waitQueue.transferPriority) //判断是否出现优先级翻转
-			waitQueue.lockHolder.effectivePriority =expiredEffectivePriority;
+				waitQueue.lockHolder.effectivePriority =expiredEffectivePriority;
 		}
 
 		/**
@@ -309,9 +304,6 @@ public class PriorityScheduler extends Scheduler {
 			waitQueue.lockHolder.waiters = waitQueue;
 		}
 		//self test
-	
-		
-		
 		/**
 		 * 
 		 */
