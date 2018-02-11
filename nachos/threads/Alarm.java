@@ -34,29 +34,19 @@ public class Alarm {
 	 * should be run.
 	 */
 	public void timerInterrupt() {
-		//KThread.currentThread().yield();
 		//Project 1.3
-//		waiter waitThread;
-		Machine.interrupt().disable();
-//		if(waiting.isEmpty()) {
-//			return;
-//		}
-//		if(waiting.peek().wakeTime > Machine.timer().getTime()){
-//			return;
-//		}
+		boolean intStatus = Machine.interrupt().disable();
 		Lib.debug(dbgInt, "Invoking Alarm.timerInterrupt at time = " + Machine.timer().getTime());
 		
-		while(!waiting.isEmpty()&&waiting.peek().wakeTime <= Machine.timer().getTime()) {
+		while(!waiting.isEmpty() && waiting.peek().wakeTime <= Machine.timer().getTime()) {
 			waiter next = waiting.remove();
 			next.thread.ready();
-//			waiting.remove(next);
 			Lib.assertTrue(next.wakeTime <= Machine.timer().getTime());
-			
 			Lib.debug(dbgInt, "  " + next.thread.getName());
 		}
 		KThread.yield();
-		Machine.interrupt().enable();
-		Lib.debug(dbgInt, "  (end of Alarm.timerInterrupt)");
+		Machine.interrupt().restore(intStatus);
+		Lib.debug(dbgInt, " (end of Alarm.timerInterrupt)");
 	}
 
 	/**
@@ -79,16 +69,10 @@ public class Alarm {
 		waiter waitThread = new waiter(wakeTime, KThread.currentThread());
 		waiting.add(waitThread);
 		
+		System.out.println(KThread.currentThread().getName() + "sleep at "+ Machine.timer().getTime() + " should wake at " + wakeTime);
 		
-		System.out.println(KThread.currentThread().getName() + "sleep at "+ Machine.timer().getTime() + " should wake at "+wakeTime);
-		
-
 		KThread.sleep();
-		Machine.interrupt().restore(intStatus);
-//		while (wakeTime > Machine.timer().getTime())
-//			KThread.yield();
-		
-		
+		Machine.interrupt().restore(intStatus);		
 	}
 	
 	class waiter implements Comparable<waiter>{
@@ -98,16 +82,11 @@ public class Alarm {
 			this.wakeTime = wakeTime;
 			this.thread = thread;
 		}
+		
 		@Override
 		public int compareTo(waiter o) {
 			waiter curr = (waiter) o;
-			if(wakeTime < curr.wakeTime)
-				return -1;
-			else if(wakeTime > curr.wakeTime)
-				return 1;
-			else 
-//				return thread.compareTo(curr.thread);
-				return 0;
+			return Long.signum(wakeTime - curr.wakeTime);
 		}
 	}
 	
