@@ -185,15 +185,69 @@ public class Communicator {
 
 		// VAR6: Test for more speakers, one listener, listener waits for
 		// speaker
+		System.out.println("\n Test6");
+		Communicator c6 = new Communicator();
+		KThread l6 = new KThread(new listenerThread(c6)).setName("l6");
+		l6.fork();
+		a1.waitUntil(5000);
+		// KThread[] s6 = new KThread[5];
+		for (int i = 0; i < 5; i++) {
+			new KThread(new speakerThread(c6, 6 * 10 + i)).setName("s6-" + i).fork();
+		}
+		a1.waitUntil(5000);
 
 		// VAR7: Test for more speakers, one listener, speaker waits for
 		// listener
+		System.out.println("\n Test7");
+		Communicator c7 = new Communicator();
+		for (int i = 0; i < 5; i++) {
+			new KThread(new speakerThread(c7, 7 * 10 + i)).setName("s7-" + i).fork();
+		}
+		a1.waitUntil(5000);
+		new KThread(new listenerThread(c7)).setName("l7").fork();
+		a1.waitUntil(5000);
+
 		// VAR8: Test for one listener, more speakers, speakers wait for
 		// listener, and then create more speakers
+		System.out.println("\n Test8");
+		Communicator c8 = new Communicator();
+		for (int i = 0; i < 5; i++) {
+			new KThread(new speakerThread(c8, 8 * 10 + i)).setName("s8-" + i).fork();
+		}
+
+		new KThread(new listenerThread(c8)).setName("l8").fork();
+
+		for (int i = 5; i < 10; i++) {
+			new KThread(new speakerThread(c8, 8 * 10 + i)).setName("s8-" + i).fork();
+		}
+		a1.waitUntil(5000);
+
 		// VAR9: Test for more speakers, more listeners, listeners waits for
 		// speaker
+		System.out.println("\n Test9");
+		Communicator c9 = new Communicator();
+		for (int i = 0; i < 5; i++) {
+			new KThread(new listenerThread(c9)).setName("l9-" + i).fork();
+		}
+		a1.waitUntil(5000);
+		for (int i = 0; i < 5; i++) {
+			new KThread(new speakerThread(c9, 9 * 10 + i)).setName("s9-" + i).fork();
+		}
+		a1.waitUntil(5000);
+
 		// VAR10: Test for more speakers, more listeners, listeners waits for
 		// speaker
+		System.out.println("\n Test10");
+		Communicator c10 = new Communicator();
+		for (int i = 0; i < 50; i++) {
+			new KThread(new listenerThread(c10)).setName("l10-" + i).fork();
+		}
+		a1.waitUntil(5000);
+		for (int i = 0; i < 50; i++) {
+			new KThread(new speakerThread(c10, 10 * 10 + i)).setName("s10-" + i).fork();
+		}
+		a1.waitUntil(5000);
+
 		// VAR11: Test for more speakers, more listeners, speakers and listeners
 		// have the same number but created with random order.
 		// VAR12: Run above test cases in batch for more than two hours, make
