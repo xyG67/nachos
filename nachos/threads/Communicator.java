@@ -20,10 +20,10 @@ public class Communicator {
 	private static int listenerNum = 0;
 	private int word = 0;
 	LinkedList<Integer> speakerQueue = new LinkedList<Integer>();
-//	Condition2 speaker = new Condition2(lock);
-//	Condition2 listener = new Condition2(lock);
-	Condition speaker = new Condition(lock);
-	Condition listener = new Condition(lock);
+	Condition2 speaker = new Condition2(lock);
+	Condition2 listener = new Condition2(lock);
+//	Condition speaker = new Condition(lock);
+//	Condition listener = new Condition(lock);
 	
 	public Communicator() {
 	}
