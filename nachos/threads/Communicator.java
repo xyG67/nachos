@@ -15,16 +15,22 @@ public class Communicator {
 	/**
 	 * Allocate a new communicator.
 	 */
-	private Lock lock = new Lock();
-	private int speakerNum = 0;// original "static" is deleted as communicator
-								// should be different objects
-	private int listenerNum = 0;// same as above
-	private int word = 0;
-	LinkedList<Integer> speakerQueue = new LinkedList<Integer>();
-	Condition2 speaker = new Condition2(lock);
-	Condition2 listener = new Condition2(lock);
+	private Lock lock;
+	private int speakerNum;
+	private int listenerNum;
+	private int word;
+	private Condition2 speaker;
+	private Condition2 listener;
+	private boolean isReady;
 
 	public Communicator() {
+		this.lock = new Lock();
+		this.speakerNum = 0;
+		this.listenerNum = 0;
+		this.word = 0;
+		this.speaker = new Condition2(lock);
+		this.listener = new Condition2(lock);
+		this.isReady = false;
 	}
 
 	/**
@@ -40,20 +46,21 @@ public class Communicator {
 	 */
 	public void speak(int word) {
 		// project 1.4
-		boolean intStatus = Machine.interrupt().disable();
+		//acquire lock and increase the speaker number
 		lock.acquire();
-		if (listenerNum == 0) {
-			speakerNum++;
-			speakerQueue.offer(word);
+		speakerNum--;
+		//speaker sleep while there is word ready or no listener is active
+		while(isReady || listenerNum ==0) {
 			speaker.sleep();
-			listener.wake();
-			speakerNum--;
-		} else {
-			speakerQueue.offer(word);
-			listener.wake();
 		}
+		//say the word and indicate word is ready
+		this.word = word;
+		isReady = true;
+		//wake the listener
+		listener.wakeAll();
+		//decrease the speaker number and release the lock
+		speakerNum--;
 		lock.release();
-		Machine.interrupt().restore(intStatus);
 		return;
 	}
 
@@ -64,20 +71,22 @@ public class Communicator {
 	 * @return the integer transferred.
 	 */
 	public int listen() {
-		boolean intStatus = Machine.interrupt().disable();
+		//acquire lock and increase the listener number
 		lock.acquire();
-		if (speakerNum != 0) {
-			speaker.wake();
+		listenerNum++;
+		//listener sleep while there is no ready word, and try to wake up all the speaker
+		while(!isReady) {
+			speaker.wakeAll();
 			listener.sleep();
-		} else {
-			listenerNum++;
-			listener.sleep();
-			listenerNum--;
 		}
+		//listen to the word and set the ready word is used now
+		int recWord = word;
+		isReady = false;
+		//decrease the listener number and release the lock
+		listenerNum--;
 		lock.release();
-		Machine.interrupt().restore(intStatus);
-		System.out.println(KThread.currentThread().getName() + " get message " + speakerQueue.peek());
-		return speakerQueue.poll();
+		//return the received word
+		return recWord;
 	}
 
 	// self test
