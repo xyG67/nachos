@@ -102,7 +102,7 @@ public class Communicator {
 			@Override
 			public void run() {
 				System.out.println(KThread.currentThread().getName() + " is listening");
-				c.listen();
+				System.out.println(KThread.currentThread().getName() + " get message " + c.listen());
 			}
 
 		}
