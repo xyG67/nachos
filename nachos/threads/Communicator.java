@@ -16,8 +16,8 @@ public class Communicator {
 	 * Allocate a new communicator.
 	 */
 	private Lock lock=new Lock();
-	private static int speakerNum = 0;
-	private static int listenerNum = 0;
+	private  int speakerNum = 0;//original "static" is deleted as communicator should be different objects
+	private  int listenerNum = 0;// same as above
 	private int word = 0;
 	LinkedList<Integer> speakerQueue = new LinkedList<Integer>();
 //	Condition2 speaker = new Condition2(lock);
