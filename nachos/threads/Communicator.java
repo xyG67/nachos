@@ -15,16 +15,17 @@ public class Communicator {
 	/**
 	 * Allocate a new communicator.
 	 */
-	private Lock lock=new Lock();
-	private  int speakerNum = 0;//original "static" is deleted as communicator should be different objects
-	private  int listenerNum = 0;// same as above
+	private Lock lock = new Lock();
+	private int speakerNum = 0;// original "static" is deleted as communicator
+								// should be different objects
+	private int listenerNum = 0;// same as above
 	private int word = 0;
 	LinkedList<Integer> speakerQueue = new LinkedList<Integer>();
-//	Condition2 speaker = new Condition2(lock);
-//	Condition2 listener = new Condition2(lock);
+	// Condition2 speaker = new Condition2(lock);
+	// Condition2 listener = new Condition2(lock);
 	Condition speaker = new Condition(lock);
 	Condition listener = new Condition(lock);
-	
+
 	public Communicator() {
 	}
 
@@ -36,13 +37,14 @@ public class Communicator {
 	 * Does not return until this thread is paired up with a listening thread.
 	 * Exactly one listener should receive <i>word</i>.
 	 * 
-	 * @param word the integer to transfer.
+	 * @param word
+	 *            the integer to transfer.
 	 */
 	public void speak(int word) {
-		//project 1.4
+		// project 1.4
 		boolean intStatus = Machine.interrupt().disable();
 		lock.acquire();
-		if(listenerNum == 0) {
+		if (listenerNum == 0) {
 			speakerNum++;
 			speakerQueue.offer(word);
 			speaker.sleep();
@@ -52,7 +54,7 @@ public class Communicator {
 			speakerQueue.offer(word);
 			listener.wake();
 		}
-		lock.release();		
+		lock.release();
 		Machine.interrupt().restore(intStatus);
 		return;
 	}
@@ -66,103 +68,138 @@ public class Communicator {
 	public int listen() {
 		boolean intStatus = Machine.interrupt().disable();
 		lock.acquire();
-		if(speakerNum != 0) {
+		if (speakerNum != 0) {
 			speaker.wake();
 			listener.sleep();
-		}else {
+		} else {
 			listenerNum++;
 			listener.sleep();
 			listenerNum--;
 		}
-		lock.release();		
+		lock.release();
 		Machine.interrupt().restore(intStatus);
-		System.out.println(KThread.currentThread().getName()+" get message "+speakerQueue.peek());
+		System.out.println(KThread.currentThread().getName() + " get message " + speakerQueue.peek());
 		return speakerQueue.poll();
 	}
-	
-	//self test
+
+	// self test
 	public static void selfTest() {
-		
-		class listenerThread implements Runnable{
+
+		class listenerThread implements Runnable {
 			Communicator c;
-			public listenerThread(Communicator c){
-				this.c=c;
+
+			public listenerThread(Communicator c) {
+				this.c = c;
 			}
+
 			@Override
 			public void run() {
-				System.out.println(KThread.currentThread().getName()+" is listening");
+				System.out.println(KThread.currentThread().getName() + " is listening");
 				c.listen();
 			}
-			
+
 		}
-		class speakerThread implements Runnable{
+		class speakerThread implements Runnable {
 			Communicator c;
 			int word;
-			public speakerThread(Communicator c, int word){
-				this.c=c;
-				this.word=word;
+
+			public speakerThread(Communicator c, int word) {
+				this.c = c;
+				this.word = word;
 			}
+
 			@Override
 			public void run() {
-				System.out.println(KThread.currentThread().getName()+" said "+word);
+				System.out.println(KThread.currentThread().getName() + " said " + word);
 				c.speak(word);
 			}
 		}
+
 		System.out.println("\n Begin Communicator Test");
+
+		// VAR1: Test for one speaker, one listener, speaker waits for listener
 		System.out.println("\n Test1");
-		//VAR1: Test for one speaker, one listener, speaker waits for listener
-		Communicator c1=new Communicator();
-		Alarm a1=new Alarm();
-		KThread s1=new KThread(new speakerThread(c1,1)).setName("s1");
+		Communicator c1 = new Communicator();
+		Alarm a1 = new Alarm();
+		KThread s1 = new KThread(new speakerThread(c1, 1)).setName("s1");
 		s1.fork();
 		a1.waitUntil(5000);
-		KThread l1=new KThread(new listenerThread(c1)).setName("l1");
+		KThread l1 = new KThread(new listenerThread(c1)).setName("l1");
 		l1.fork();
 		l1.join();
+
+		// VAR2: Test for one speaker, one listener, listener waits for speaker
 		System.out.println("\n Test2");
-		//VAR2: Test for one speaker, one listener, listener waits for speaker
-		Communicator c2=new Communicator();
-		KThread l2=new KThread(new listenerThread(c2)).setName("l2");
+		Communicator c2 = new Communicator();
+		KThread l2 = new KThread(new listenerThread(c2)).setName("l2");
 		l2.fork();
 		a1.waitUntil(5000);
-		KThread s2=new KThread(new speakerThread(c2,2)).setName("s2");
+		KThread s2 = new KThread(new speakerThread(c2, 2)).setName("s2");
 		s2.fork();
 		s2.join();
-		
+
+		// VAR3: Test for one speaker, more listeners, listener waits for
+		// speaker
 		System.out.println("\n Test3");
-//		VAR3: Test for one speaker, more listeners, listener waits for speaker
-		Communicator c3=new Communicator();
-		KThread[] l3=new KThread[5];
-		for(int i=0;i<5;i++){
-			l3[i]=new KThread(new listenerThread(c3)).setName("l3-"+i);
+		Communicator c3 = new Communicator();
+		KThread[] l3 = new KThread[5];
+		for (int i = 0; i < 5; i++) {
+			l3[i] = new KThread(new listenerThread(c3)).setName("l3-" + i);
 			l3[i].fork();
 		}
 		a1.waitUntil(5000);
-		KThread s3=new KThread(new speakerThread(c3,3)).setName("s3");
+		KThread s3 = new KThread(new speakerThread(c3, 3)).setName("s3");
 		s3.fork();
 		s3.join();
-		
+
+		// VAR4: Test for one speaker, more listeners, speaker waits for
+		// listener
 		System.out.println("\n Test4");
-//		VAR4: Test for one speaker, more listeners, speaker waits for listener
-		Communicator c4=new Communicator();
-		KThread s4=new KThread(new speakerThread(c4,4)).setName("s4");
+		Communicator c4 = new Communicator();
+		KThread s4 = new KThread(new speakerThread(c4, 4)).setName("s4");
 		s4.fork();
 		a1.waitUntil(5000);
-		KThread[] l4=new KThread[5];
-		for(int i=0;i<5;i++){
-			l4[i]=new KThread(new listenerThread(c4)).setName("l4-"+i);
+		KThread[] l4 = new KThread[5];
+		for (int i = 0; i < 5; i++) {
+			l4[i] = new KThread(new listenerThread(c4)).setName("l4-" + i);
 			l4[i].fork();
 		}
 		a1.waitUntil(5000);
-		
-//		VAR5: Test for one speaker, more listeners, listeners waits for speaker, and then create more listeners
-//		VAR6: Test for more speakers, one listener, listener waits for speaker
-//		VAR7: Test for more speakers, one listener, speaker waits for listener
-//		VAR8: Test for one listener, more speakers, speakers wait for listener, and then create more speakers
-//		VAR9: Test for more speakers, more listeners, listeners waits for speaker
-//		VAR10: Test for more speakers, more listeners, listeners waits for speaker
-//		VAR11: Test for more speakers, more listeners, speakers and listeners have the same number but created with random order.
-//		VAR12: Run above test cases in batch for more than two hours, make sure no exception occurs.
+
+		// VAR5: Test for one speaker, more listeners, listeners waits for
+		// speaker, and then create more listeners
+		System.out.println("\n Test5");
+		Communicator c5 = new Communicator();
+		KThread[] l5 = new KThread[10];
+		for (int i = 0; i < 5; i++) {
+			l5[i] = new KThread(new listenerThread(c5)).setName("l5-" + i);
+			l5[i].fork();
+		}
+
+		KThread s5 = new KThread(new speakerThread(c5, 5)).setName("s5");
+		s5.fork();
+		// s5.join();
+		for (int i = 5; i < 10; i++) {
+			l5[i] = new KThread(new listenerThread(c5)).setName("l5-" + i);
+			l5[i].fork();
+		}
+		a1.waitUntil(5000);
+
+		// VAR6: Test for more speakers, one listener, listener waits for
+		// speaker
+
+		// VAR7: Test for more speakers, one listener, speaker waits for
+		// listener
+		// VAR8: Test for one listener, more speakers, speakers wait for
+		// listener, and then create more speakers
+		// VAR9: Test for more speakers, more listeners, listeners waits for
+		// speaker
+		// VAR10: Test for more speakers, more listeners, listeners waits for
+		// speaker
+		// VAR11: Test for more speakers, more listeners, speakers and listeners
+		// have the same number but created with random order.
+		// VAR12: Run above test cases in batch for more than two hours, make
+		// sure no exception occurs.
 	}
-		
+
 }
