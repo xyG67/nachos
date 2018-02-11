@@ -113,7 +113,8 @@ public class Alarm {
 	
 	//self test
 	static void selfTest() {
-
+		
+		// define test class with three arguments label, waiting time, alarm
 		class alarmTest implements Runnable{
 			String label;
 			long time;
@@ -132,12 +133,15 @@ public class Alarm {
 			
 		}
 		
-		Alarm alarm=new Alarm();
+		Alarm alarm=new Alarm();//Initialize a alarm
+		
+		//initialize thread
 		KThread Athread = new KThread(new alarmTest("A",50000,alarm)).setName("A");
 		KThread Bthread = new KThread(new alarmTest("B",20000,alarm)).setName("B");
 		KThread Cthread = new KThread(new alarmTest("C",10000,alarm)).setName("C");
 		KThread Dthread = new KThread(new alarmTest("D",40000,alarm)).setName("D");
 		
+		// The  output sequence should be CBDA which is related to the waiting time as above
 		System.out.println("beginning: Alarm Test");
 		Athread.fork();
 		Bthread.fork();
@@ -147,7 +151,6 @@ public class Alarm {
 		Cthread.join();
 		Bthread.join();
 		Athread.join();
-		
 	}
 	
 	
