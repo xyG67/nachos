@@ -1,8 +1,6 @@
 package nachos.threads;
 
-import java.util.LinkedList;
 import java.util.PriorityQueue;
-import java.util.TreeSet;
 
 import nachos.machine.*;
 
@@ -39,7 +37,7 @@ public class Alarm {
 		Lib.debug(dbgInt, "Invoking Alarm.timerInterrupt at time = " + Machine.timer().getTime());
 		
 		while(!waiting.isEmpty() && waiting.peek().wakeTime <= Machine.timer().getTime()) {
-			waiter next = waiting.remove();
+			waiter next = waiting.poll();
 			next.thread.ready();
 			Lib.assertTrue(next.wakeTime <= Machine.timer().getTime());
 			Lib.debug(dbgInt, "  " + next.thread.getName());
@@ -133,9 +131,6 @@ public class Alarm {
 	}
 	
 	
-//	private ThreadQueue waitlist  = ThreadedKernel.scheduler.newThreadQueue(true); 
-//	private LinkedList<waiter> waitlist= new LinkedList<>();
 	private static final char dbgInt = 'i';
-//	private TreeSet<waiter> waiting;
 	private PriorityQueue<waiter> waiting;
 }
