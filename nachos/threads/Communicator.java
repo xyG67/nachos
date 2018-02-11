@@ -1,6 +1,5 @@
 package nachos.threads;
 
-import java.util.LinkedList;
 import java.util.Random;
 
 import nachos.machine.Machine;
@@ -49,7 +48,7 @@ public class Communicator {
 		// project 1.4
 		//acquire lock and increase the speaker number
 		lock.acquire();
-		speakerNum--;
+		speakerNum++;
 		//speaker sleep while there is word ready or no listener is active
 		while(isReady || listenerNum ==0) {
 			speaker.sleep();
