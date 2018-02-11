@@ -250,6 +250,8 @@ public class Communicator {
 
 		// VAR11: Test for more speakers, more listeners, speakers and listeners
 		// have the same number but created with random order.
+		
+		
 		// VAR12: Run above test cases in batch for more than two hours, make
 		// sure no exception occurs.
 	}
