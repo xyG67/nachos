@@ -1,6 +1,7 @@
 package nachos.threads;
 
 import java.util.LinkedList;
+import java.util.Random;
 
 import nachos.machine.Machine;
 
@@ -250,7 +251,34 @@ public class Communicator {
 
 		// VAR11: Test for more speakers, more listeners, speakers and listeners
 		// have the same number but created with random order.
+		Communicator c11=new Communicator();
+		int N=100;
+		boolean[] flip=new boolean[N];
+		for(int i=N/2;i<N;i++){
+			flip[i]=true;
+		}
 		
+		//random shullfle
+		Random rand=new Random();
+		for (int i = flip.length - 1; i > 0; i--)
+	    {
+	      int index = rand.nextInt(i + 1);
+	      // Simple swap
+	      boolean a = flip[index];
+	      flip[index] = flip[i];
+	      flip[i] = a;
+	    }
+		int idx1=0;
+		int idx2=0;
+		for(int i=0;i<N;i++){
+			if(flip[i]){
+				new KThread(new speakerThread(c11, 1000 * 10 + idx1)).setName("s20-" + idx1++).fork();
+			}else{
+				new KThread(new listenerThread(c11)).setName("l20-" + idx2++).fork();
+			}
+				
+		}
+		a1.waitUntil(20000);
 		
 		// VAR12: Run above test cases in batch for more than two hours, make
 		// sure no exception occurs.
