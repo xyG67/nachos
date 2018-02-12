@@ -309,12 +309,6 @@ public class KThread {
 	     *
 	     */
 		boolean intStatus = Machine.interrupt().disable();
-	    
-//	    if (joinQueue == null) {
-//	        // note: join queue should transfer priority 
-//	        joinQueue = ThreadedKernel.scheduler.newThreadQueue(true);  
-//	        joinQueue.acquire(this);
-//	    }   
 	        
 	    if (currentThread != this && status != statusFinished) {
 	        // add this thread to join queue
@@ -455,11 +449,7 @@ public class KThread {
 
 		new KThread(new PingTest(1)).setName("forked thread").fork();
 		new PingTest(0).run();
-		
-//		test
-//		KThread  t1 = new KThread(new PingTest(1)).setName("A");
-//		t1.fork();
-//		t1.join();
+
 		
 	}
 
@@ -512,9 +502,9 @@ public class KThread {
 	    testThread.fork();
 
 
-	    System.out.println("*** [hy] enter join ***");
+	    System.out.println("***  enter join ***");
 	    t2.join();
-	    System.out.println("*** [hy] leave join ***");
+	    System.out.println("***  leave join ***");
 	    // t2.join();
 
 	    // Add current thread to ready queue, and switch context
@@ -577,42 +567,8 @@ public class KThread {
 	
 	//---------------------------------
 
-    private static KThread testThread = null;  // added by hy [3/3/2013]
+    private static KThread testThread = null;  
 	
 	
-	/*-------------------------------------
-	 */
-	private static class Joiner implements Runnable{
-		private KThread B;
-		Joiner(KThread B){
-			this.B = B;
-		}
-		public void run() {
-			System.out.println("A: before joining");
-			B.join();
-			System.out.println("A: after joining");
-			
-		}		
-	}
 	
-	private static class Joinee implements Runnable{
-		
-		public void run() {
-			System.out.println("B: running");
-			
-		}		
-	}
-	
-	public static void test() {
-		Joinee B = new Joinee();
-		KThread Bthread = new KThread(B).setName("B");
-		Joiner A = new Joiner(Bthread);
-		KThread Athread = new KThread(A).setName("A");
-		System.out.println("beginning: a joins B. A runs first");
-		Athread.fork();
-		Bthread.fork();
-	}
-	
-	
-	//-----------------------------------------
 }
