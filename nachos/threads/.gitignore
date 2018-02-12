@@ -34,3 +34,6 @@
 /Alarm$1alarmTest.class
 /Communicator$1listenerThread.class
 /Communicator$1speakerThread.class
+/ThreadState.class
+/PriorityScheduler$ThreadStateComparator.class
+/PriorityScheduler$PriorityQueue$ThreadStateComparator.class
