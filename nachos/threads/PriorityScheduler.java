@@ -178,10 +178,10 @@ public class PriorityScheduler extends Scheduler {
 		 */
 		public boolean transferPriority;
 		
-		private java.util.PriorityQueue<ThreadState> waitingQueue = new java.util.PriorityQueue<ThreadState>(8,new ThreadStateComparator<ThreadState>(this));
+		private java.util.PriorityQueue<ThreadState> waitingQueue = new java.util.PriorityQueue<ThreadState>(8,new ThreadStateComparator(this));
 		private KThread lockerThread = null;
 		
-		protected class ThreadStateComparator<T extends ThreadState> implements Comparator<T> {
+		protected class ThreadStateComparator implements Comparator<ThreadState> {
 			
 			private nachos.threads.PriorityScheduler.PriorityQueue priorityQueue;
 			
@@ -190,7 +190,7 @@ public class PriorityScheduler extends Scheduler {
 			}
 
 			@Override
-			public int compare(T o1, T o2) {
+			public int compare(ThreadState o1, ThreadState o2) {
 				int effectivePriority1 = o1.getEffectivePriority();
 				int effectivePriority2 = o2.getEffectivePriority();
 				if (effectivePriority1 > effectivePriority2)
