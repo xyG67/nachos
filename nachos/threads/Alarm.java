@@ -1,7 +1,6 @@
 package nachos.threads;
 
-import java.util.LinkedList;
-import java.util.TreeSet;
+import java.util.PriorityQueue;
 
 import nachos.machine.*;
 
@@ -18,7 +17,7 @@ public class Alarm {
 	 * <b>Note</b>: Nachos will not function correctly with more than one alarm.
 	 */
 	public Alarm() {
-		waiting = new TreeSet<waiter>();
+		waiting = new PriorityQueue<waiter>();
 		Machine.timer().setInterruptHandler(new Runnable() {
 			public void run() {
 				timerInterrupt();
@@ -33,27 +32,19 @@ public class Alarm {
 	 * should be run.
 	 */
 	public void timerInterrupt() {
-		//KThread.currentThread().yield();
 		//Project 1.3
-		waiter waitThread;
-		
-		if(waiting.isEmpty()) {
-			return;
-		}
-		if(waiting.first().wakeTime > Machine.timer().getTime()){
-			return;
-		}
+		boolean intStatus = Machine.interrupt().disable();
 		Lib.debug(dbgInt, "Invoking Alarm.timerInterrupt at time = " + Machine.timer().getTime());
 		
-		while(!waiting.isEmpty()&&waiting.first().wakeTime <= Machine.timer().getTime()) {
-			waiter next = waiting.first();
+		while(!waiting.isEmpty() && waiting.peek().wakeTime <= Machine.timer().getTime()) {
+			waiter next = waiting.poll();
 			next.thread.ready();
-			waiting.remove(next);
 			Lib.assertTrue(next.wakeTime <= Machine.timer().getTime());
-			
 			Lib.debug(dbgInt, "  " + next.thread.getName());
 		}
-		Lib.debug(dbgInt, "  (end of Alarm.timerInterrupt)");
+		KThread.yield();
+		Machine.interrupt().restore(intStatus);
+		Lib.debug(dbgInt, " (end of Alarm.timerInterrupt)");
 	}
 
 	/**
@@ -74,47 +65,72 @@ public class Alarm {
 		long wakeTime = Machine.timer().getTime() + x;
 		
 		waiter waitThread = new waiter(wakeTime, KThread.currentThread());
-		waitlist.add(waitThread);
+		waiting.add(waitThread);
 		
-		
-		System.out.println(KThread.currentThread().getName() + "sleep at "+ Machine.timer().getTime() + " should wake at "+wakeTime);
-		
+		System.out.println(KThread.currentThread().getName() + "sleep at "+ Machine.timer().getTime() + " should wake at " + wakeTime);
 		
 		KThread.sleep();
-		Machine.interrupt().restore(intStatus);
-		//while (wakeTime > Machine.timer().getTime())
-			//KThread.yield();
-		
-		
+		Machine.interrupt().restore(intStatus);		
 	}
 	
-	class waiter implements Comparable{
+	class waiter implements Comparable<waiter>{
 		long wakeTime;
 		private KThread thread;
 		waiter(long wakeTime, KThread thread){
 			this.wakeTime = wakeTime;
 			this.thread = thread;
 		}
+		
 		@Override
-		public int compareTo(Object o) {
+		public int compareTo(waiter o) {
 			waiter curr = (waiter) o;
-			if(wakeTime < curr.wakeTime)
-				return -1;
-			else if(wakeTime < curr.wakeTime)
-				return 1;
-			else 
-				return thread.compareTo(curr.thread);
+			return Long.signum(wakeTime - curr.wakeTime);
 		}
 	}
 	
 	//self test
 	static void selfTest() {
 		
+		// define test class with three arguments label, waiting time, alarm
+		class alarmTest implements Runnable{
+			String label;
+			long time;
+			Alarm alarm;
+			alarmTest(String s,long time,Alarm alarm){
+				label=s;
+				this.time=time;
+				this.alarm=alarm;
+			}
+			@Override
+			public void run() {
+				System.out.println(label);
+				alarm.waitUntil(time);
+				System.out.println(label+" finished "+time+" ms passed");
+			}
+			
+		}
+		
+		Alarm alarm=new Alarm();//Initialize a alarm
+		
+		//initialize thread
+		KThread Athread = new KThread(new alarmTest("A",50000,alarm)).setName("A");
+		KThread Bthread = new KThread(new alarmTest("B",20000,alarm)).setName("B");
+		KThread Cthread = new KThread(new alarmTest("C",10000,alarm)).setName("C");
+		KThread Dthread = new KThread(new alarmTest("D",40000,alarm)).setName("D");
+		
+		// The  output sequence should be CBDA which is related to the waiting time as above
+		System.out.println("beginning: Alarm Test");
+		Athread.fork();
+		Bthread.fork();
+		Cthread.fork();
+		Dthread.fork();
+		Dthread.join();
+		Cthread.join();
+		Bthread.join();
+		Athread.join();
 	}
 	
 	
-	
-	private LinkedList<waiter> waitlist;
 	private static final char dbgInt = 'i';
-	private TreeSet<waiter> waiting;
+	private PriorityQueue<waiter> waiting;
 }

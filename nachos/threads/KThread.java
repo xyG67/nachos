@@ -309,14 +309,12 @@ public class KThread {
 	     *
 	     */
 		boolean intStatus = Machine.interrupt().disable();
-	     
-	    // lazy init joinQueue
-	    if (joinQueue == null) {
-	            // add a queue to store joined on me thread [12/8/2013 HY]
-	            // note: join queue should transfer priority 
-	            joinQueue = ThreadedKernel.scheduler.newThreadQueue(true);  
-	            joinQueue.acquire(this);
-	    }   
+	    
+//	    if (joinQueue == null) {
+//	        // note: join queue should transfer priority 
+//	        joinQueue = ThreadedKernel.scheduler.newThreadQueue(true);  
+//	        joinQueue.acquire(this);
+//	    }   
 	        
 	    if (currentThread != this && status != statusFinished) {
 	        // add this thread to join queue
@@ -457,6 +455,12 @@ public class KThread {
 
 		new KThread(new PingTest(1)).setName("forked thread").fork();
 		new PingTest(0).run();
+		
+//		test
+//		KThread  t1 = new KThread(new PingTest(1)).setName("A");
+//		t1.fork();
+//		t1.join();
+		
 	}
 
 	public static void selfTest2() {
@@ -551,7 +555,7 @@ public class KThread {
 
 	private TCB tcb;
 	
-	private ThreadQueue joinQueue  = null;
+	private ThreadQueue joinQueue  = ThreadedKernel.scheduler.newThreadQueue(true); ;
 
 	/**
 	 * Unique identifer for this thread. Used to deterministically compare
