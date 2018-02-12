@@ -337,4 +337,40 @@ public class PriorityScheduler extends Scheduler {
 		
 		public HashMap<nachos.threads.PriorityScheduler.PriorityQueue,Long> waitingMap = new HashMap<nachos.threads.PriorityScheduler.PriorityQueue,Long>();
 	}
+	
+	public static void selfTest1() {
+		ThreadQueue tq1 = ThreadedKernel.scheduler.newThreadQueue(true);
+		
+		KThread t1 = new KThread(), t2 = new KThread();
+		
+		boolean status = Machine.interrupt().disable();
+		
+		tq1.waitForAccess(t1);
+		tq1.waitForAccess(t2);
+		//tq1.waitForAccess(kt_3);
+		
+		tq1.acquire(t2);
+		
+		System.out.println("t2\t"+ThreadedKernel.scheduler.getEffectivePriority(t2));
+		ThreadedKernel.scheduler.setPriority(t1, 5);
+		System.out.println("t2\t"+ThreadedKernel.scheduler.getEffectivePriority(t2));
+		
+		Lib.assertTrue(ThreadedKernel.scheduler.getEffectivePriority(t2)==5);
+		
+		KThread kt_5 = new KThread();
+		
+		ThreadedKernel.scheduler.setPriority(kt_5, 6);
+		
+		tq1.waitForAccess(kt_5);
+		
+		Lib.assertTrue(ThreadedKernel.scheduler.getEffectivePriority(t2)==6);
+		System.out.println("t2\t"+ThreadedKernel.scheduler.getEffectivePriority(t2));
+		tq1.nextThread();
+		
+		System.out.println("t2\t"+ThreadedKernel.scheduler.getEffectivePriority(t2));
+		
+		
+		Machine.interrupt().restore(status);
+	}
 }
+
