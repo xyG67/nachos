@@ -51,7 +51,7 @@ public class ThreadedKernel extends Kernel {
 		SynchList.selfTest();
 		//-----------------	    
 	    // KThread.selfTest();
-	     Communicator.selfTest();
+	     //Communicator.selfTest();
 	     PriorityScheduler.selfTest1();
 	    // Condition2.selfTest();
 	    // Alarm.selfTest();
