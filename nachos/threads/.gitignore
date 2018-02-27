@@ -6,7 +6,6 @@
 /Communicator.class
 /Condition.class
 <<<<<<< HEAD
-<<<<<<< HEAD
 /Condition2.class
 /ElevatorController.class
 /KThread$1.class
@@ -34,8 +33,6 @@
 /KThread$4.class
 /Condition2$Condition2Test.class
 =======
-=======
->>>>>>> fbbe5ee5638b6aa46c16a8ce09987b9d30aef4a1
 /Condition2$Condition2Test.class
 /Condition2.class
 /ElevatorController.class
@@ -65,10 +62,5 @@
 /Alarm$1alarmTest.class
 /Communicator$1listenerThread.class
 /Communicator$1speakerThread.class
-<<<<<<< HEAD
 >>>>>>> branch 'master' of https://github.com/xyG67/nachos.git
-=======
-/ThreadState.class
-/PriorityScheduler$ThreadStateComparator.class
->>>>>>> fbbe5ee5638b6aa46c16a8ce09987b9d30aef4a1
 /PriorityScheduler$PriorityQueue$ThreadStateComparator.class

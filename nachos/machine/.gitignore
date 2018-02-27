@@ -49,7 +49,6 @@
 /RiderInterface.class
 /SerialConsole.class
 <<<<<<< HEAD
-<<<<<<< HEAD
 /StandardConsole$1.class
 /StandardConsole$2.class
 /StandardConsole.class
@@ -58,11 +57,6 @@
 /StandardConsole.class
 /StandardConsole$1.class
 >>>>>>> branch 'master' of https://github.com/xyG67/nachos.git
-=======
-/StandardConsole$2.class
-/StandardConsole.class
-/StandardConsole$1.class
->>>>>>> fbbe5ee5638b6aa46c16a8ce09987b9d30aef4a1
 /Stats.class
 /StubFileSystem$FileRemover.class
 /StubFileSystem$StubOpenFile$1.class
