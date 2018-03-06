@@ -37,6 +37,12 @@ public class UserProcess {
 		
 		freeDescriptors = new ArrayList<Integer>();
 		openFiles = new HashMap<Integer, OpenFile>();
+		
+		for(int i=2; i < 16; i++) {
+			freeDescriptors.add(i);
+		}
+		openFiles.put(0, UserKernel.console.openForReading());
+		openFiles.put(1, UserKernel.console.openForWriting());
 	}
 
 	/**
