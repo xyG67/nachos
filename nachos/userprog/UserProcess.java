@@ -4,6 +4,7 @@ import nachos.machine.*;
 import nachos.threads.*;
 import nachos.userprog.*;
 
+import java.util.*;
 import java.io.EOFException;
 
 /**
@@ -19,6 +20,12 @@ import java.io.EOFException;
  * @see nachos.network.NetProcess
  */
 public class UserProcess {
+	private static final int MAXLEN = 255;
+
+	private List<Integer> freeDescriptors;
+	
+	private HashMap<Integer, OpenFile> openFiles;
+	
 	/**
 	 * Allocate a new process.
 	 */
@@ -27,6 +34,9 @@ public class UserProcess {
 		pageTable = new TranslationEntry[numPhysPages];
 		for (int i = 0; i < numPhysPages; i++)
 			pageTable[i] = new TranslationEntry(i, i, true, false, false, false);
+		
+		freeDescriptors = new ArrayList<Integer>();
+		openFiles = new HashMap<Integer, OpenFile>();
 	}
 
 	/**
@@ -342,6 +352,163 @@ public class UserProcess {
 		Lib.assertNotReached("Machine.halt() did not halt machine!");
 		return 0;
 	}
+	
+	/**
+	 * Handle the create system call.
+	 */
+	private int handleCreate(int a0) {
+		Lib.debug(dbgProcess, "start handleCreate()");
+		
+		String filename = this.readVirtualMemoryString(a0, MAXLEN);
+		Lib.debug(dbgProcess, "file:" + filename);
+		
+		if(filename == null)
+			return -1;
+		else {
+			OpenFile openFile = ThreadedKernel.fileSystem.open(filename, true);
+			if((openFile == null) || (freeDescriptors.size() < 1))
+				return -1;
+			else {
+				Integer descriptorId = freeDescriptors.remove(0);
+				openFiles.put(descriptorId, openFile);
+				Lib.debug(dbgProcess, "create in " + descriptorId);
+				return descriptorId;
+			}		
+		}
+	}
+	
+	/**
+	 * Handle the open system call.
+	 */
+	private int handleOpen(int a0) {
+		Lib.debug(dbgProcess, "start handleOpen()");
+		
+		String filename = this.readVirtualMemoryString(a0, MAXLEN);
+		Lib.debug(dbgProcess, "file:" + filename);
+		
+		if(filename == null)
+			return -1;
+		else {
+			OpenFile openFile = ThreadedKernel.fileSystem.open(filename, false);
+			if((openFile == null) || (freeDescriptors.size() < 1))
+				return -1;
+			else {
+				Integer descriptorId = freeDescriptors.remove(0);
+				openFiles.put(descriptorId, openFile);
+				Lib.debug(dbgProcess, "create in " + descriptorId);
+				return descriptorId;
+			}		
+		}
+	}
+	
+	/**
+	 * Handle the read system call.
+	 */
+	private int handleRead(int a0, int a1, int a2) {
+		Lib.debug(dbgProcess, "start handleRead()");
+		
+		OpenFile openFile = openFiles.get(a0);
+		
+		if(openFile == null)
+			return -1;
+		else {
+			byte[] readBuffer = new byte[Processor.pageSize];
+			boolean ifFinish = false;
+			int transferCount = 0;
+			int count = a2;
+			while (!ifFinish && count > 0) {
+				int readLength = Math.min(Processor.pageSize, count);
+				
+				int actualReadLength = openFile.read(readBuffer, 0, readLength);
+				if (actualReadLength == -1)
+					return -1;
+				if (actualReadLength < readLength)
+					ifFinish = true;
+				
+				int transferredBytes = writeVirtualMemory(a1, readBuffer, 0, actualReadLength);
+				if (transferredBytes != actualReadLength)
+					return -1;
+				
+				count -= actualReadLength;
+				a1 += actualReadLength;
+				transferCount += actualReadLength;
+			}
+			Lib.debug(dbgProcess, "Transferred bytes: " + transferCount);
+			return transferCount;
+		}
+	}
+	
+	/**
+	 * Handle the write system call.
+	 */
+	private int handleWrite(int a0, int a1, int a2) {
+		Lib.debug(dbgProcess, "start handleWrite()");
+		
+		OpenFile openFile = openFiles.get(a0);
+		
+		if(openFile == null)
+			return -1;
+		else {
+			byte[] writeBuffer = new byte[Processor.pageSize];
+			int transferCount = 0;
+			int count = a2;
+			while (count > 0) {
+				int readLength = Math.min(Processor.pageSize, count);
+				
+				int actualReadLength = readVirtualMemory(a1, writeBuffer, 0, readLength);
+				if (actualReadLength == -1)
+					return -1;
+				if (actualReadLength < readLength)
+					return -1;
+				
+				int transferredBytes = openFile.write(writeBuffer, 0, actualReadLength);
+				if (transferredBytes != actualReadLength)
+					return -1;
+				
+				count -= actualReadLength;
+				a1 += actualReadLength;
+				transferCount += actualReadLength;
+			}
+			Lib.debug(dbgProcess, "Transferred bytes: " + transferCount);
+			return transferCount;
+		}
+	}
+	
+	/**
+	 * Handle the close system call.
+	 */
+	private int handleClose(int a0) {
+		Lib.debug(dbgProcess, "start handleClose()");
+		
+		OpenFile openFile = openFiles.get(a0);
+		
+		if(openFile == null)
+			return -1;
+		else {
+			openFile.close();
+			openFiles.remove(a0);
+			freeDescriptors.add(a0);
+			Lib.debug(dbgProcess, "Close file successfully");
+			return 0;
+		}
+	}
+	
+	/**
+	 * Handle the unlink system call.
+	 */
+	private int handleUnlink(int a0) {
+		Lib.debug(dbgProcess, "start handlUnlink()");
+		
+		String filename = this.readVirtualMemoryString(a0, MAXLEN);
+		Lib.debug(dbgProcess, "file:" + filename);
+		
+		if(filename == null)
+			return -1;
+		else if(ThreadedKernel.fileSystem.remove(filename))
+			return 0;
+		else
+			return -1;
+	}
 
 	private static final int syscallHalt = 0, syscallExit = 1, syscallExec = 2,
 			syscallJoin = 3, syscallCreate = 4, syscallOpen = 5,
@@ -413,7 +580,35 @@ public class UserProcess {
 		switch (syscall) {
 		case syscallHalt:
 			return handleHalt();
+			
+//		case syscallExit:
+//			handleExit(a0);
+//			return 0;
+//			
+//		case syscallExec:
+//			return handleExec(a0, a1, a2);
+//			
+//		case syscallJoin:
+//			return handleJoin(a0, a1);
+			
+		case syscallCreate:
+			return handleCreate(a0);
 
+		case syscallOpen:
+			return handleOpen(a0);
+			
+		case syscallRead:
+			return handleRead(a0, a1, a2);
+			
+		case syscallWrite:
+			return handleWrite(a0, a1, a2);
+			
+		case syscallClose:
+			return handleClose(a0);
+			
+		case syscallUnlink:
+			return handleUnlink(a0);
+			
 		default:
 			Lib.debug(dbgProcess, "Unknown syscall " + syscall);
 			Lib.assertNotReached("Unknown system call!");
