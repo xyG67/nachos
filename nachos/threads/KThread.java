@@ -196,7 +196,6 @@ public class KThread {
 		Lib.debug(dbgThread, "Finishing thread: " + currentThread.toString());
 
 		Machine.interrupt().disable();
-		//
 		ThreadQueue currJoinQueue = currentThread.joinQueue;
 		if(currJoinQueue != null) {
 			KThread thread = currJoinQueue.nextThread();
@@ -205,7 +204,6 @@ public class KThread {
 	            thread = currJoinQueue.nextThread();
 	        }
 		}
-		//
 		Machine.autoGrader().finishingCurrentThread();
 
 		Lib.assertTrue(toBeDestroyed == null);
@@ -213,13 +211,6 @@ public class KThread {
 
 		currentThread.status = statusFinished;
 		
-		/*
-		KThread waitThread = currentThread.joinQueue.nextThread();
-		while(waitThread != null) {
-			waitThread.ready();
-			waitThread = currentThread.joinQueue.nextThread();
-		}
-		*/
 		sleep();
 	}
 
@@ -301,21 +292,8 @@ public class KThread {
 		Lib.debug(dbgThread, "Joining to thread: " + toString());
 		Lib.assertTrue(this != currentThread);
 
-	    /**
-	     * Notes from Lec 5.19.  
-	     * One thread can wait from another to finish with the ThreadJoin(tid) call
-	     * Calling thread will be taken off run queue and placed on waiting queue for thread tid
-	     * wait queue placed inside the TCB
-	     *
-	     */
 		boolean intStatus = Machine.interrupt().disable();
 	    
-//	    if (joinQueue == null) {
-//	        // note: join queue should transfer priority 
-//	        joinQueue = ThreadedKernel.scheduler.newThreadQueue(true);  
-//	        joinQueue.acquire(this);
-//	    }   
-	        
 	    if (currentThread != this && status != statusFinished) {
 	        // add this thread to join queue
 		    joinQueue.waitForAccess(currentThread);
@@ -456,22 +434,14 @@ public class KThread {
 		new KThread(new PingTest(1)).setName("forked thread").fork();
 		new PingTest(0).run();
 		
-//		test
-//		KThread  t1 = new KThread(new PingTest(1)).setName("A");
-//		t1.fork();
-//		t1.join();
-		
+
 	}
 
 	public static void selfTest2() {
 		Lib.debug(dbgThread, "Enter KThread.selfTest2");
 		
 
-	    /*
-	    Runnable myrunnable1 = new Runnable() {
-	       public void run() { yield(); } 
-	    };
-	    */
+
 
 	    Runnable myrunnable1 = new Runnable() {
 
@@ -577,7 +547,7 @@ public class KThread {
 	
 	//---------------------------------
 
-    private static KThread testThread = null;  // added by hy [3/3/2013]
+    private static KThread testThread = null; 
 	
 	
 	/*-------------------------------------

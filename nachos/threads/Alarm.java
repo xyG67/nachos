@@ -60,14 +60,13 @@ public class Alarm {
 	 * @see nachos.machine.Timer#getTime()
 	 */
 	public void waitUntil(long x) {
-		// for now, cheat just to get something working (busy waiting is bad)
 		boolean intStatus = Machine.interrupt().disable();//disable interrupt
 		long wakeTime = Machine.timer().getTime() + x;
 		
 		waiter waitThread = new waiter(wakeTime, KThread.currentThread());
 		waiting.add(waitThread);
 		
-		System.out.println(KThread.currentThread().getName() + "sleep at "+ Machine.timer().getTime() + " should wake at " + wakeTime);
+		//System.out.println(KThread.currentThread().getName() + "sleep at "+ Machine.timer().getTime() + " should wake at " + wakeTime);
 		
 		KThread.sleep();
 		Machine.interrupt().restore(intStatus);		
