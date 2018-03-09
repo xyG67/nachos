@@ -151,9 +151,29 @@ public class UserProcess {
 		// for now, just assume that virtual addresses equal physical addresses
 		if (vaddr < 0 || vaddr >= memory.length)
 			return 0;
-
-		int amount = Math.min(length, memory.length - vaddr);
-		System.arraycopy(memory, vaddr, data, offset, amount);
+		
+		if(vaddr > numPages * pageSize) 
+			return 0;
+		
+		if((vaddr+length) > numPages * pageSize)
+			return 0;
+		
+		int pageNum = vaddr / pageSize;
+		
+		if (!pageTable[pageNum].valid)
+			return 0;
+		
+		int physicalPageNum = pageTable[pageNum].ppn;
+		
+		int pageOffset = vaddr % pageSize;
+		
+		int physicalAddress = physicalPageNum * pageSize + pageOffset;
+		
+		if (physicalAddress < 0 || physicalAddress >= memory.length)
+			return 0;
+		
+		int amount = Math.min(length, memory.length - physicalAddress);
+		System.arraycopy(memory, physicalAddress, data, offset, amount);
 
 		return amount;
 	}
@@ -194,8 +214,31 @@ public class UserProcess {
 		if (vaddr < 0 || vaddr >= memory.length)
 			return 0;
 
-		int amount = Math.min(length, memory.length - vaddr);
-		System.arraycopy(data, offset, memory, vaddr, amount);
+		if(vaddr > numPages * pageSize) 
+			return 0;
+		
+		if((vaddr+length) > numPages * pageSize)
+			return 0;
+		
+		int pageNum = vaddr / pageSize;
+		
+		if (!pageTable[pageNum].valid)
+			return 0;
+		
+		if (pageTable[pageNum].readOnly)
+			return 0;
+		
+		int physicalPageNum = pageTable[pageNum].ppn;
+		
+		int pageOffset = vaddr % pageSize;
+		
+		int physicalAddress = physicalPageNum * pageSize + pageOffset;
+		
+		if (physicalAddress < 0 || physicalAddress >= memory.length)
+			return 0;
+		
+		int amount = Math.min(length, memory.length - physicalAddress);
+		System.arraycopy(data, offset, memory, physicalAddress, amount);
 
 		return amount;
 	}
@@ -300,7 +343,26 @@ public class UserProcess {
 			Lib.debug(dbgProcess, "\tinsufficient physical memory");
 			return false;
 		}
-
+		
+		mutex.acquire();
+		if (UserKernel.freePhysPages.size() < numPages){
+			mutex.release();
+			return false;
+		}
+		
+		for (int i = 0; i < numPages; i++){
+			int physPageNum;
+			if(UserKernel.freePhysPages.isEmpty()) {
+				mutex.release();
+				return false;
+			}	
+			physPageNum = UserKernel.freePhysPages.removeFirst();
+			pageTable[i].ppn = physPageNum;
+			pageTable[i].vpn = i;
+			pageTable[i].valid = true;
+		}
+		mutex.release();
+		
 		// load sections
 		for (int s = 0; s < coff.getNumSections(); s++) {
 			CoffSection section = coff.getSection(s);
@@ -313,9 +375,10 @@ public class UserProcess {
 
 				// for now, just assume virtual addresses=physical addresses
 				section.loadPage(i, vpn);
+				pageTable[vpn].readOnly = section.isReadOnly();
+				pageTable[vpn].valid = true;
 			}
 		}
-
 		return true;
 	}
 
@@ -669,4 +732,6 @@ public class UserProcess {
 	private static final int pageSize = Processor.pageSize;
 
 	private static final char dbgProcess = 'a';
+	
+	private Lock mutex = new Lock();
 }
