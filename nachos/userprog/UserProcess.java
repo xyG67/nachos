@@ -20,11 +20,6 @@ import java.io.EOFException;
  * @see nachos.network.NetProcess
  */
 public class UserProcess {
-	private static final int MAXLEN = 255;
-
-	private List<Integer> freeDescriptors;
-	
-	private HashMap<Integer, OpenFile> openFiles;
 	
 	/**
 	 * Allocate a new process.
@@ -32,6 +27,7 @@ public class UserProcess {
 	public UserProcess() {
 		int numPhysPages = Machine.processor().getNumPhysPages();
 		pageTable = new TranslationEntry[numPhysPages];
+		childMap = new HashMap<Integer, UserProcess>();
 		for (int i = 0; i < numPhysPages; i++)
 			pageTable[i] = new TranslationEntry(i, i, true, false, false, false);
 		
@@ -43,6 +39,9 @@ public class UserProcess {
 		}
 		openFiles.put(0, UserKernel.console.openForReading());
 		openFiles.put(1, UserKernel.console.openForWriting());
+		
+		pid = nextPid;
+		nextPid++;
 	}
 
 	/**
@@ -338,20 +337,16 @@ public class UserProcess {
 	 * @return <tt>true</tt> if the sections were successfully loaded.
 	 */
 	protected boolean loadSections() {
-		if (numPages > Machine.processor().getNumPhysPages()) {
-			coff.close();
-			Lib.debug(dbgProcess, "\tinsufficient physical memory");
-			return false;
-		}
 		
+		//update page table
 		mutex.acquire();
 		if (UserKernel.freePhysPages.size() < numPages){
 			mutex.release();
 			return false;
 		}
-		
+		int physPageNum = 0;
+
 		for (int i = 0; i < numPages; i++){
-			int physPageNum;
 			if(UserKernel.freePhysPages.isEmpty()) {
 				mutex.release();
 				return false;
@@ -362,8 +357,12 @@ public class UserProcess {
 			pageTable[i].valid = true;
 		}
 		mutex.release();
-		
 		// load sections
+		if (numPages > Machine.processor().getNumPhysPages()) {
+			coff.close();
+			Lib.debug(dbgProcess, "\tinsufficient physical memory");
+			return false;
+		}
 		for (int s = 0; s < coff.getNumSections(); s++) {
 			CoffSection section = coff.getSection(s);
 
@@ -374,7 +373,7 @@ public class UserProcess {
 				int vpn = section.getFirstVPN() + i;
 
 				// for now, just assume virtual addresses=physical addresses
-				section.loadPage(i, vpn);
+				section.loadPage(i, pageTable[vpn].ppn);
 				pageTable[vpn].readOnly = section.isReadOnly();
 				pageTable[vpn].valid = true;
 			}
@@ -386,6 +385,17 @@ public class UserProcess {
 	 * Release any resources allocated by <tt>loadSections()</tt>.
 	 */
 	protected void unloadSections() {
+		mutex.acquire();
+		for(int i = 0; i < numPages; i++){
+			if(pageTable[i].valid)
+				UserKernel.freePhysPages.add(pageTable[i].ppn);
+		}
+		mutex.release();
+		
+		numPages = 0;
+		pageTable = null;
+		
+		coff.close();
 	}
 
 	/**
@@ -566,7 +576,7 @@ public class UserProcess {
 	 * Handle the unlink system call.
 	 */
 	private int handleUnlink(int a0) {
-		Lib.debug(dbgProcess, "start handlUnlink()");
+		Lib.debug(dbgProcess, "start handleUnlink()");
 		
 		String filename = this.readVirtualMemoryString(a0, MAXLEN);
 		Lib.debug(dbgProcess, "file:" + filename);
@@ -578,6 +588,110 @@ public class UserProcess {
 		else
 			return -1;
 	}
+	
+	/**
+	 * Handle the exit system call.
+	 */
+	private void handleExit(int a0) {
+		Lib.debug(dbgProcess, "start handleExit()");
+		
+		for(int descriptorId: openFiles.keySet()) {
+			OpenFile openFile = openFiles.get(descriptorId);
+			openFile.close();
+			freeDescriptors.remove(descriptorId);
+		}
+		openFiles.clear();
+		
+		unloadSections();
+		
+		if(toJoinThread != null) {
+			boolean intStatus = Machine.interrupt().disable();
+			toJoinThread.ready();
+			Machine.interrupt().restore(intStatus);
+			toJoinThread = null;
+			parent.joinStatus = a0;
+		}
+		
+		if(parent != null) {
+			parent.childMap.remove(pid);
+			parent = null;
+		}
+		
+		for (Map.Entry<Integer, UserProcess> entry : childMap.entrySet()) {
+			entry.getValue().parent = null;
+			entry.getValue().toJoinThread = null;
+		}
+		
+		childMap.clear();
+		
+		if (this.pid == 1)
+			Kernel.kernel.terminate();
+		else {
+			KThread.currentThread().finish();			
+		}			
+	}
+	
+	
+	/**
+	 * Handle the exec system call.
+	 */
+	private int handleExec(int a0, int a1, int a2) {
+		
+		Lib.debug(dbgProcess, "start handleExec()");
+		if(a0 <= 0 || a1 < 0 || a2 < 0)
+			return -1;
+		
+		String fileName = readVirtualMemoryString(a0, MAXLEN);
+
+		if(fileName == null)
+			return -1;
+		String arguments[] = new String[] {};
+		if(a1 > 0) {
+			arguments = new String[a1];
+			byte data[]=new byte[4];
+			for(int i = 0; i < a1; i++) {
+				readVirtualMemory(a2 + i * 4, data);
+				int argumentAddr = Lib.bytesToInt(data, 0);
+				arguments[i] = readVirtualMemoryString(argumentAddr, MAXLEN);
+			}
+		}
+
+		UserProcess child = new UserProcess();
+		
+		if(child.execute(fileName, arguments) == false)
+			return -1;
+		
+		child.parent = this;
+		childMap.put(child.pid, child);
+
+		return child.pid;
+	}
+	
+	/**
+	 * Handle the join system call.
+	 */
+	private int handleJoin(int a0, int a1) {
+		Lib.debug(dbgProcess, "start handleJoin()");
+		
+		if(!childMap.containsKey(a0))
+			return -1;
+		
+		childMap.get(a0).toJoinThread =  KThread.currentThread();
+		
+		boolean intStatus = Machine.interrupt().disable();
+		KThread.sleep();
+		Machine.interrupt().restore(intStatus);
+		
+		byte[] returnJoinStatus = new byte[4];
+		returnJoinStatus = Lib.bytesFromInt(joinStatus);
+		writeVirtualMemory( a1, returnJoinStatus);	
+		
+		if(joinStatus == 0)
+			return 1;
+		
+		return 0;
+	}
+	
 
 	private static final int syscallHalt = 0, syscallExit = 1, syscallExec = 2,
 			syscallJoin = 3, syscallCreate = 4, syscallOpen = 5,
@@ -650,15 +764,14 @@ public class UserProcess {
 		case syscallHalt:
 			return handleHalt();
 			
-//		case syscallExit:
-//			handleExit(a0);
-//			return 0;
-//			
-//		case syscallExec:
-//			return handleExec(a0, a1, a2);
-//			
-//		case syscallJoin:
-//			return handleJoin(a0, a1);
+		case syscallExit:
+			handleExit(a0);
+			
+		case syscallExec:
+			return handleExec(a0, a1, a2);
+			
+		case syscallJoin:
+			return handleJoin(a0, a1);
 			
 		case syscallCreate:
 			return handleCreate(a0);
@@ -732,6 +845,25 @@ public class UserProcess {
 	private static final int pageSize = Processor.pageSize;
 
 	private static final char dbgProcess = 'a';
+
+	private static final int MAXLEN = 256;
+
+	private List<Integer> freeDescriptors;
+	
+	private HashMap<Integer, OpenFile> openFiles;
 	
 	private Lock mutex = new Lock();
+	
+	private UserProcess parent;
+	
+	private HashMap<Integer,UserProcess> childMap;
+	
+	private int pid;
+	
+	private static int nextPid = 1;
+	
+	int joinStatus;
+	
+	private KThread toJoinThread;
+	
 }
