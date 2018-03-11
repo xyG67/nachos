@@ -33,7 +33,7 @@ public class UserProcess {
 		
 		freeDescriptors = new ArrayList<Integer>();
 		openFiles = new HashMap<Integer, OpenFile>();
-		
+		mutex.acquire();
 		for(int i=2; i < 16; i++) {
 			freeDescriptors.add(i);
 		}
@@ -42,6 +42,7 @@ public class UserProcess {
 		
 		pid = nextPid;
 		nextPid++;
+		mutex.release();
 	}
 
 	/**
@@ -676,7 +677,7 @@ public class UserProcess {
 		if(!childMap.containsKey(a0))
 			return -1;
 		
-		childMap.get(a0).toJoinThread =  KThread.currentThread();
+		childMap.get(a0).toJoinThread =  (UThread) KThread.currentThread();
 		
 		boolean intStatus = Machine.interrupt().disable();
 		KThread.sleep();
@@ -864,6 +865,6 @@ public class UserProcess {
 	
 	int joinStatus;
 	
-	private KThread toJoinThread;
+	private UThread toJoinThread;
 	
 }
