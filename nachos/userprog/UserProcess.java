@@ -28,6 +28,7 @@ public class UserProcess {
 		int numPhysPages = Machine.processor().getNumPhysPages();
 		pageTable = new TranslationEntry[numPhysPages];
 		childMap = new HashMap<Integer, UserProcess>();
+		childExitStatus = new HashMap<Integer, Integer>();
 		for (int i = 0; i < numPhysPages; i++)
 			pageTable[i] = new TranslationEntry(i, i, true, false, false, false);
 		
@@ -602,15 +603,16 @@ public class UserProcess {
 			freeDescriptors.remove(descriptorId);
 		}
 		openFiles.clear();
-		
 		unloadSections();
-		
 		if(toJoinThread != null) {
 			boolean intStatus = Machine.interrupt().disable();
 			toJoinThread.ready();
 			Machine.interrupt().restore(intStatus);
 			toJoinThread = null;
-			parent.joinStatus = a0;
+			if(parent != null) {
+				parent.childExitStatus.put(this.pid, a0);				
+			}
+			
 		}
 		
 		if(parent != null) {
@@ -664,7 +666,7 @@ public class UserProcess {
 		
 		child.parent = this;
 		childMap.put(child.pid, child);
-
+		childExitStatus.put(child.pid, Integer.MIN_VALUE);
 		return child.pid;
 	}
 	
@@ -676,20 +678,20 @@ public class UserProcess {
 		
 		if(!childMap.containsKey(a0))
 			return -1;
+		if(!childExitStatus.containsKey(a0))
+			return -1;
 		
 		childMap.get(a0).toJoinThread =  (UThread) KThread.currentThread();
 		
 		boolean intStatus = Machine.interrupt().disable();
 		KThread.sleep();
 		Machine.interrupt().restore(intStatus);
-		
-		byte[] returnJoinStatus = new byte[4];
-		returnJoinStatus = Lib.bytesFromInt(joinStatus);
-		writeVirtualMemory( a1, returnJoinStatus);	
-		
-		if(joinStatus == 0)
-			return 1;
-		
+			int exitStatus = childExitStatus.get(a0);
+			byte[] exitStatusBytes = new byte[4];
+			exitStatusBytes = Lib.bytesFromInt(exitStatus);
+			writeVirtualMemory( a1, exitStatusBytes);	
+			if(exitStatus != Integer.MIN_VALUE)
+				return 1;
 		return 0;
 	}
 	
@@ -863,7 +865,7 @@ public class UserProcess {
 	
 	private static int nextPid = 1;
 	
-	int joinStatus;
+	private HashMap<Integer,Integer> childExitStatus;
 	
 	private UThread toJoinThread;
 	
